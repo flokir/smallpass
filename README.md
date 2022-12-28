@@ -1,5 +1,5 @@
 # smallpass
-A small cli tool used to store passwords encrypted
+A small cli tool used to store encrypted passwords
 
 # Usage
 
