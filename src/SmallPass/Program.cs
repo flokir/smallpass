@@ -3,16 +3,16 @@ using SmallPass.Utils;
 
 namespace SmallPass;
 
-
-
 // todo don't show entered passwords in console
 
 internal static class Program
 {
-    private static readonly EntryManager EntryManager = new EntryManager(GetEntryDirectory());
-    
+    private static readonly EntryManager EntryManager = new(GetEntryDirectory());
+
+
     private static void Main(string[] args)
     {
+        StorageUtils.CreateDirectoryIfNotExists(GetEntryDirectory());
         if (args.Length >= 1)
             switch (args[0])
             {
@@ -53,21 +53,27 @@ internal static class Program
             }
 
         Console.WriteLine("Usage: smallpass [help/list/create/view/viewid]");
+    }
 
-        // passwords are encrypted using aes-256 -> determine mode
-        // entries are stored in ~/.pw/ each entry in a seperate file
-        // files are named using uuids and contain a json with the following format
-        // {
-        //  id: string,
-        //  entryName: string,
-        //  paswordHash: string, // contains the sha-256 hash of the password encoded in base 64
-        //  encryptedPassword: string,
-        //  iv: string // the initialization vector used for encryption and decryption
-        // }
-        // usage: smallpass [option]
-        // smallpass create [entryname] // used to create a new entry
-        // smalpass view [entryname] // used to view an entry
-        // entryname is only allowed to contain lowercase characters
+    private static string? ReadInputHidden()
+    {
+        var sb = new StringBuilder();
+        while (true)
+        {
+            var keyInfo = Console.ReadKey(true);
+            if (keyInfo.Key == ConsoleKey.Enter)
+                // enter ends the input
+                break;
+            if (keyInfo.Key == ConsoleKey.Backspace)
+            {
+                // backspace so we remove the last char from the stringbuilder
+                sb.Remove(sb.Length - 1, 1);
+                continue;
+            }
+            sb.Append(keyInfo.KeyChar);
+            
+        }
+        return sb.ToString();
     }
 
     private static void ViewEntryByName(string name)
@@ -78,6 +84,7 @@ internal static class Program
             Console.WriteLine($"Entry with name {name} not found");
             return;
         }
+
         PrintFullEntry(entry);
     }
 
@@ -108,16 +115,15 @@ internal static class Program
         Console.WriteLine($"Salt: {Convert.ToBase64String(entry.Salt)}");
         Console.WriteLine("Enter decryption key");
 
-        var decryptionKey = Console.ReadLine();
+        var decryptionKey = ReadInputHidden();
         if (string.IsNullOrEmpty(decryptionKey))
         {
             Console.WriteLine("Decryption key is empty");
             return;
         }
-        
-        string decryptedPassword = DecryptPassword(entry.EncryptedPassword, decryptionKey, entry.Iv, entry.Salt);
+
+        var decryptedPassword = DecryptPassword(entry.EncryptedPassword, decryptionKey, entry.Iv, entry.Salt);
         Console.WriteLine(decryptedPassword);
-        Console.WriteLine(decryptedPassword.Length);
     }
 
     private static string DecryptPassword(byte[] encryptedPassword, string decryptionKey, byte[] iv, byte[] salt)
@@ -128,19 +134,18 @@ internal static class Program
         var decryptedPassword = Encoding.UTF8.GetString(decryptedPasswordBytes ?? Array.Empty<byte>());
         return decryptedPassword.Trim('\0'); // remove the padding trailing zeroes
     }
-    
+
 
     private static void CreateEntry(string entryName)
     {
-        
         if (EntryManager.CheckIfEntryWithNameExists(entryName))
         {
             Console.WriteLine("There is already an entry with this name");
             return;
         }
-        
+
         Console.WriteLine("Please enter the password to be stored");
-        var password = Console.ReadLine();
+        var password = ReadInputHidden();
         if (string.IsNullOrEmpty(password))
         {
             Console.WriteLine("Password is empty");
@@ -148,7 +153,7 @@ internal static class Program
         }
 
         Console.WriteLine("Please enter the encryption key");
-        var encryptionKey = Console.ReadLine();
+        var encryptionKey = ReadInputHidden();
         if (string.IsNullOrEmpty(encryptionKey))
         {
             Console.WriteLine("Encryption password is empty");
@@ -158,7 +163,6 @@ internal static class Program
         var fileName = Guid.NewGuid().ToString();
 
 
-        
         var iv = EncryptionUtils.GenerateAesIv();
         var salt = HashUtils.GenerateSecureSalt(32);
 
@@ -176,17 +180,17 @@ internal static class Program
             EncryptionUtils.PadBytes(passwordBytes,
                 256); // we add a padding to the password so the encrypted data doesn't indicate the length
         var encryptionKeyBytes = Encoding.UTF8.GetBytes(encryptionKey);
-        var encryptionKeyHash  = HashUtils.ComputePbkdf2Hash(encryptionKeyBytes, salt);
+        var encryptionKeyHash = HashUtils.ComputePbkdf2Hash(encryptionKeyBytes, salt);
         var encryptedPassword = EncryptionUtils.EncryptData(passwordBytes, encryptionKeyHash, iv);
         return encryptedPassword;
     }
-    
+
     private static string GetEntryDirectory()
     {
         var homePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         return Path.Combine(homePath, ".pw");
     }
-    
+
     private static void PrintEntrySummary(Entry entry)
     {
         Console.WriteLine($"{entry.EntryName}:{entry.Id}:{Convert.ToBase64String(entry.PasswordHash)}");

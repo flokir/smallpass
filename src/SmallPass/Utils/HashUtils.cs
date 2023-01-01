@@ -11,9 +11,9 @@ public static class HashUtils
 
     public static byte[] ComputePbkdf2Hash(byte[] password, byte[] salt)
     {
-        // use 100000 iterations for optimal time / complexity
-        int iterationCount = 100000;
-        Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(password, salt, iterationCount, HashAlgorithmName.SHA512);
+        // use 1000000 iterations for optimal time / complexity
+        var iterationCount = 1000000; // changed to 1000000 iterations
+        var deriveBytes = new Rfc2898DeriveBytes(password, salt, iterationCount, HashAlgorithmName.SHA512);
         return deriveBytes.GetBytes(32); // 32 Bytes = 256 bits
     }
 

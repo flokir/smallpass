@@ -20,7 +20,7 @@ An overview of the entry will be shown and you are prompted for the decryption k
 # Security
 Before encryption the password is padded to 256 Bytes, so that the length of the encrypted data doesn't indicate the length off the password.
 
-For encrypting a password, the encryption key is hashed using PBKDF2 with a random salt and 10000 iterations. This hash is then used to encrypt the password with AES-256-CBC, additionally a random initialization vector is used so that in case of the same password being stored the encrypted data looks different.
+For encrypting a password, the encryption key is hashed using PBKDF2 with a random salt and 1000000 iterations. This hash is then used to encrypt the password with AES-256-CBC, additionally a random initialization vector is used so that in case of the same password being stored the encrypted data looks different.
 
 # Storage format
 Entries are stored unter ```~/.pw``` in files named after their ids respectively  

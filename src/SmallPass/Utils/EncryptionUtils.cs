@@ -45,7 +45,7 @@ public static class EncryptionUtils
             return null;
         }
     }
-    
+
     public static byte[] PadBytes(byte[] data, int length)
     {
         var paddedBytes = new byte[length];

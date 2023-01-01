@@ -6,4 +6,9 @@ public static class StorageUtils
     {
         return Path.Combine(baseDir, fileName);
     }
+
+    public static void CreateDirectoryIfNotExists(string entryDir)
+    {
+        if (!Directory.Exists(entryDir)) Directory.CreateDirectory(entryDir);
+    }
 }
